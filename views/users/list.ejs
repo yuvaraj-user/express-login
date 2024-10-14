@@ -1,0 +1,200 @@
+  <%- include('../partials/top_header') %>
+  <body>
+    <%- include('../partials/sidebar') %>
+    <div class="wrapper d-flex flex-column min-vh-100">
+      <%- include('../partials/header') %>
+
+      <!-- Modal start -->
+      <div class="modal fade" id="add_users_modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">Add User</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                  <form class="form-card" method="POST" action="/add_users">
+                      <div class="row justify-content-between text-left">
+                          <div class="form-group col-sm-6 flex-column d-flex"> 
+                            <label class="form-control-label">Name<span class="text-danger"> *</span></label> 
+                            <input class="form-control" type="text" id="name" name="name" placeholder="Enter your name"> 
+                          </div>
+                          <div class="form-group col-sm-6 flex-column d-flex">
+                             <label class="form-control-label">Email<span class="text-danger"> *</span></label>
+                            <input class="form-control" type="text" id="email" name="email" placeholder=""> 
+                          </div>
+                      </div>
+                      <div class="row justify-content-between text-left">
+                          <div class="form-group col-sm-6 flex-column d-flex"> 
+                            <label class="form-control-label">Password<span class="text-danger"> *</span></label>
+                            <input class="form-control" type="password" id="password" name="password" placeholder="Enter your password"> 
+                          </div>
+                      </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" id="save_user">Save</button>
+              <button type="button" class="btn btn-primary" id="update_user" style="display: none;">Update</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+
+      <div class="body flex-grow-1">
+          <div class="container">
+            <div class="mb-3 mt-5 d-flex">
+              <button class="btn btn-sm btn-primary" id="delete_all">
+                Delete all selected
+              </button>
+              <div class="ms-auto">
+                <a onclick="user_modal()"><button class="btn btn-sm btn-success">Add User</button></a>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-12">
+                <table
+                  class="table table-striped table-hover table-bordered text-center"
+                  style="vertical-align: middle"
+                >
+                  <thead>
+                    <th>
+                      <input type="checkbox" name="check_all" class="check_all" />
+                    </th>
+                    <th>Sno</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Created at</th>
+                    <th>Updated at</th>
+                    <th>Action</th>
+                  </thead>
+                  <tbody>
+                    <% data.forEach(function(res,index) { %>
+                    <tr>
+                      <td>
+                        <input
+                          type="checkbox"
+                          class="row-checkbox"
+                          name="row_check<%= res.id %>"
+                          data-id="<%= res.id %>"
+                        />
+                      </td>
+                      <td><%= index+1 %></td>
+                      <td><%= res.name %></td>
+                      <td><%= res.email %></td>
+                      <td><%= res.created_at.toLocaleDateString() %></td>
+                      <td><%= res.updated_at.toLocaleDateString() %></td>
+                      <td>
+                        <div class="d-flex justify-content-center">
+                          <a class="edit_user" data-id="<%= res.id %>"><button class="btn btn-primary btn-sm">Edit</button></a>
+                          <form
+                            class="ms-2"
+                            method="POST"
+                            action="/delete_users/<%=res.id %>?_method=DELETE"
+                          >
+                            <!-- <input type="hidden" name="_method" value="DELETE" /> -->
+                            <button class="btn btn-danger btn-sm" type="submit">
+                              Delete
+                            </button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                    <% }); %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+    <script>
+      const BASE_URL = "http://localhost:3000";
+      let check_all = document.getElementsByClassName("check_all");
+      check_all[0].addEventListener("click", (e) => {
+        let checkbox_status = false;
+        if (check_all[0].checked) {
+          checkbox_status = true;
+        }
+        let row_check = document.getElementsByClassName("row-checkbox");
+        for (let i = 0; i < row_check.length; i++) {
+          row_check[i].checked = checkbox_status;
+        }
+      });
+
+      document.getElementById("delete_all").addEventListener("click", (e) => {
+        let row_check = document.getElementsByClassName("row-checkbox");
+        var ids = [];
+        for (let i = 0; i < row_check.length; i++) {
+          if (row_check[i].checked) {
+            let row_id = row_check[i].getAttribute("data-id");
+            ids.push(row_id);
+          }
+        }
+        delete_all(ids);
+      });
+
+      const delete_all = async (ids) => {
+        try {
+          var data_obj = { ids: ids };
+          await axios.delete("/mdelete", {data : data_obj} ,{
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }).then((response) => console.log(response));
+        } catch (errors) {
+          console.error(errors);
+        }
+      };
+
+      function user_modal() {
+        $('#name').val('');
+        $('#email').val('');
+        $('#password').val('');
+        $('#add_users_modal').modal('show');
+      }
+
+      $(document).on('click','#save_user',async function() {
+        let username = $('#name').val();
+        let email    = $('#email').val();
+        let password = $('#password').val();
+        try {
+          var data_obj = { name: username,email : email,password : password };
+          await axios.post("/add_users", data_obj ,{
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }).then((response) =>{
+            location.reload();
+            console.log(response);
+          });
+        } catch (errors) {
+          console.error(errors);
+        }
+      });
+
+      $(document).on('click','.edit_user',async function() {
+        let id = $(this).data('id');
+        try {
+          await axios.get("/edit_users/"+id, {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }).then((res) => {
+            console.log(res.data.user.name);
+              $('#name').val(res.data.user.name);
+              $('#email').val(res.data.user.email);
+              $('#password').val(res.data.user.password);
+              $('#add_users_modal').modal('show');
+          });
+        } catch (err) {
+          console.error(err);
+        } 
+      });
+
+    </script>
+  </body>
+</html>
